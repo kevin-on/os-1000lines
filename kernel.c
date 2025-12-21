@@ -33,13 +33,32 @@ void putchar(char ch) {
 void kernel_main(void) {
   memset(__bss, 0, (size_t)__bss_end - (size_t)__bss);
 
+  // Test putchar
   const char *s = "\n\nHello World!\n";
   for (int i = 0; s[i] != '\0'; i++) {
       putchar(s[i]);
   }
 
+  // Test printf
   printf("\n\nHello %s\n", "World!");
   printf("1 + 2 = %d, %x\n", 1 + 2, 0x1234abcd);
+
+  // Test strcpy
+  char dst[10];
+  strcpy(dst, "Hello");
+  printf("strcpy(dst, \"Hello\") = %s\n", dst);
+
+  // Test strcmp
+  printf("strcmp(\"Hello\", \"World\") = %d\n", strcmp("Hello", "World"));
+  printf("strcmp(\"Hello\", \"%s\") = %d\n", dst, strcmp("Hello", dst));
+
+  // Test memset
+  memset(dst, 'A', 5);
+  printf("memset(dst, 'A', 10) = %s\n", dst);
+
+  // Test memcpy
+  memcpy(dst, "World", 5);
+  printf("memcpy(dst, \"World\", 5) = %s\n", dst);
 
   for (;;) {
     __asm__ __volatile__("wfi");
