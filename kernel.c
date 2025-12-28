@@ -6,6 +6,7 @@ typedef unsigned int uint32_t;
 typedef uint32_t size_t;
 
 extern char __bss[], __bss_end[], __stack_top[], __free_ram[], __free_ram_end[], __kernel_base[];
+extern char _binary_shell_bin_start[], _binary_shell_bin_size[];
 
 struct sbiret sbi_call(long arg0, long arg1, long arg2, long arg3, long arg4,
                        long arg5, long fid, long eid) {
@@ -204,7 +205,19 @@ void switch_context(uint32_t *prev_sp,
 
 struct process procs[PROCS_MAX]; // All process control structures.
 
-struct process *create_process(uint32_t pc) {
+__attribute__((naked))
+void user_entry(void) {
+  __asm__ __volatile__(
+    "csrw sepc, %[sepc]\n"
+    "csrw sstatus, %[sstatus]\n"
+    "sret\n"
+    :
+    : [sepc] "r" (USER_BASE),
+      [sstatus] "r" (SSTATUS_SPIE)
+  );
+}
+
+struct process *create_process(const void *image, size_t image_size) {
     // Find an unused process control structure.
     struct process *proc = NULL;
     int i;
@@ -233,15 +246,27 @@ struct process *create_process(uint32_t pc) {
     *--sp = 0;                      // s2
     *--sp = 0;                      // s1
     *--sp = 0;                      // s0
-    *--sp = (uint32_t) pc;          // ra
-
+    *--sp = (uint32_t) user_entry;  // ra
 
     // Initialize page table
     uint32_t *page_table = (uint32_t *) alloc_pages(1);
+
+    // Map kernel pages
     for (paddr_t paddr = (paddr_t) __kernel_base;
          paddr < (paddr_t) __free_ram_end;
          paddr += PAGE_SIZE)
       map_page(page_table, paddr, paddr, PAGE_R | PAGE_W | PAGE_X);
+
+    // Map user pages
+    for (uint32_t offset = 0; offset < image_size; offset += PAGE_SIZE) {
+      paddr_t paddr = alloc_pages(1);
+
+      size_t remaining_size = image_size - offset;
+      size_t copy_size = remaining_size > PAGE_SIZE ? PAGE_SIZE : remaining_size;
+
+      memcpy((void *) paddr, (void *) ((uint32_t) image + offset), copy_size);
+      map_page(page_table, USER_BASE + offset, paddr, PAGE_U | PAGE_R | PAGE_W | PAGE_X);
+    }
 
     // Initialize fields.
     proc->pid = i + 1;
@@ -285,7 +310,15 @@ void yield(void) {
   switch_context(&prev->sp, &next->sp);
 }
 
+void idle_entry(void) {
+  for (;;) {
+    yield();
+    __asm__ __volatile__("wfi");
+  }
+}
 
+
+/* Test functions */
 void test_printf(void) {
   // Test putchar
   const char *s = "\n\nHello World!\n";
@@ -370,20 +403,19 @@ void proc_b_entry(void) {
 }
 
 void test_context_switching(void) {
-  proc_a = create_process((uint32_t) proc_a_entry);
-  proc_b = create_process((uint32_t) proc_b_entry);
+  // This function is outdated as create_process is updated to take image and image size as arguments
+  // proc_a = create_process((uint32_t) proc_a_entry);
+  // proc_b = create_process((uint32_t) proc_b_entry);
   // proc_a_entry();
+  // yield();
+  // PANIC("switched to idle process");
+}
+
+void test_user_process(void) {
+  create_process(_binary_shell_bin_start, (size_t) _binary_shell_bin_size);
   yield();
-  PANIC("switched to idle process");
 }
 
-
-void idle_entry(void) {
-  for (;;) {
-    yield();
-    __asm__ __volatile__("wfi");
-  }
-}
 
 /**
  * Kernel main function.
@@ -394,7 +426,7 @@ void kernel_main(void) {
   WRITE_CSR(stvec, (uint32_t) kernel_entry);
 
   // Initialize idle process
-  idle_proc = create_process((uint32_t) idle_entry);
+  idle_proc = create_process(idle_entry, 0);
   idle_proc->pid = 0;
   current_proc = idle_proc;
 
@@ -402,11 +434,10 @@ void kernel_main(void) {
   // test_common_functions();
   // test_exceptions();
   // test_alloc_pages();
-  test_context_switching();
+  // test_context_switching();
+  test_user_process();
 
-  for (;;) {
-    __asm__ __volatile__("wfi");
-  }
+  PANIC("kernel_main ended");
 }
 
 __attribute__((section(".text.boot")))
