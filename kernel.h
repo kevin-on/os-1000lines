@@ -66,6 +66,7 @@ struct trap_frame {
 
 #define PROC_UNUSED   0   // Unused process control structure
 #define PROC_RUNNABLE 1   // Runnable process
+#define PROC_EXITED   2   // Exited process
 
 struct process {
     int pid;              // Process ID
@@ -89,3 +90,4 @@ struct process {
 #define USER_BASE 0x1000000
 
 #define SSTATUS_SPIE (1 << 5)
+#define SCAUSE_ECALL 8

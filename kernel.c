@@ -31,6 +31,11 @@ void putchar(char ch) {
   sbi_call(ch, 0, 0, 0, 0, 0, 0, 1 /* Console Putchar */);
 }
 
+int getchar(void) {
+  struct sbiret ret = sbi_call(0, 0, 0, 0, 0, 0, 0, 2 /* Console Getchar */);
+  return ret.error;
+}
+
 __attribute__((naked))
 __attribute__((aligned(4)))
 void kernel_entry(void) {
@@ -114,13 +119,6 @@ void kernel_entry(void) {
     );
 }
 
-void handle_trap(struct trap_frame *f) {
-  uint32_t scause = READ_CSR(scause);
-  uint32_t stval = READ_CSR(stval);
-  uint32_t user_pc = READ_CSR(sepc);
-
-  PANIC("unexpected trap scause=%x, stval=%x, sepc=%x\n", scause, stval, user_pc);
-}
 
 /**
  * Allocate 'n' pages of physical memory.
@@ -315,6 +313,52 @@ void idle_entry(void) {
     yield();
     __asm__ __volatile__("wfi");
   }
+}
+
+void handle_syscall(struct trap_frame *f) {
+  uint32_t sysno = f->a3;
+  uint32_t arg0 = f->a0;
+  uint32_t arg1 = f->a1;
+  uint32_t arg2 = f->a2;
+
+  switch (sysno) {
+    case SYS_PUTCHAR:
+      putchar(arg0);
+      break;
+    case SYS_GETCHAR:
+      while(1) {
+        long ch = getchar();
+        if (ch >= 0) {
+          f->a0 = ch;
+          break;
+        }
+        yield();
+      }
+      break;
+    case SYS_EXIT:
+      printf("process %d exited\n", current_proc->pid);
+      current_proc->state = PROC_EXITED;
+      // TODO: free process resources
+      yield();
+      PANIC("unreachable");
+    default:
+      PANIC("unexpected syscall sysno=%x\n", sysno);
+  }
+}
+
+void handle_trap(struct trap_frame *f) {
+  uint32_t scause = READ_CSR(scause);
+  uint32_t stval = READ_CSR(stval);
+  uint32_t user_pc = READ_CSR(sepc);
+
+  if (scause == SCAUSE_ECALL) {
+    handle_syscall(f);
+    user_pc += 4;
+  } else {
+    PANIC("unexpected trap scause=%x, stval=%x, sepc=%x\n", scause, stval, user_pc);
+  }
+
+  WRITE_CSR(sepc, user_pc);
 }
 
 
