@@ -30,3 +30,11 @@ int getchar(void) {
 __attribute__((noreturn)) void exit(void) {
     syscall(SYS_EXIT, 0, 0, 0);
 }
+
+int readfile(const char *path, char *buf, int size) {
+    return syscall(SYS_READFILE, (int)path, (int)buf, size);
+}
+
+int writefile(const char *path, const char *buf, int size) {
+    return syscall(SYS_WRITEFILE, (int)path, (int)buf, size);
+}

@@ -24,6 +24,13 @@ void main(void) {
             printf("Hello, World!\n");
         } else if (strcmp(cmdline, "exit") == 0) {
             exit();
+        } else if (strcmp(cmdline, "readfile") == 0) {
+            char buf[128];
+            int size = readfile("hello.txt", buf, sizeof(buf));
+            buf[size] = '\0';
+            printf("%s\n", buf);
+        } else if (strcmp(cmdline, "writefile") == 0) {
+            writefile("hello.txt", "Hello from shell!\n", 19);
         } else {
             printf("Unknown command: %s\n", cmdline);
             printf("Please try again.\n");
