@@ -116,7 +116,7 @@ __attribute__((naked)) __attribute__((aligned(4))) void kernel_entry(void) {
 
 /**
  * Allocate 'n' pages of physical memory.
- * Deallocation is not implemented.
+ * TODO: Implement deallocation.
  */
 paddr_t alloc_pages(uint32_t n) {
     static paddr_t next_paddr = (paddr_t)__free_ram;
