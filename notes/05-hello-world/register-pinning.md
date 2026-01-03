@@ -2,8 +2,6 @@
 
 This note expands the [“Say hello to SBI” section](https://operating-system-in-1000-lines.vercel.app/en/05-hello-world#say-hello-to-sbi). Here we explain why the “pinning” part is necessary, even though it can look redundant at first.
 
----
-
 ## Start from the correct code
 
 The tutorial uses this pattern:
@@ -38,8 +36,6 @@ At a glance, you might ask:
 
 Let’s answer those questions.
 
----
-
 ## What SBI requires at the moment of `ecall`
 
 SBI is not a normal C function call. It is a convention about **which registers** contain what when the CPU executes `ecall`.
@@ -57,8 +53,6 @@ For the SBI calling convention used in this tutorial:
   * `a1`: value
 
 So SBI is “register ABI based”. If the values are not in the correct `a*` registers at `ecall`, the firmware reads the wrong request.
-
----
 
 ## Why the pinning lines exist
 
@@ -80,8 +74,6 @@ So after those assignments, the compiler must arrange that:
 
 Pinning is how we translate the SBI register ABI into something the compiler will obey.
 
----
-
 ## “But my `sbi_call` compiles to just `ecall; ret`”
 
 That can still be correct.
@@ -97,8 +89,6 @@ sbi_call:
 This does not mean pinning is useless. It means the C ABI and the SBI ABI happen to match for this function signature, so the compiler can optimize away the moves.
 
 Pinning still matters because the compiler may inline the call site, and you want correctness even when optimizations change where values live.
-
----
 
 ## The tempting rewrite that breaks SBI
 
@@ -121,8 +111,6 @@ The key problem is the `"r"` constraint.
 It does not mean: “put it in `a0`”, “put it in `a7`”, etc.
 
 So the compiler is free to choose any registers for those inputs, especially after inlining.
-
----
 
 ## Your observed “wrong” assembly results
 
@@ -190,8 +178,6 @@ Now you can clearly see what happened:
 
 So `ecall` still happens, but it is not an SBI call with the intended meaning.
 
----
-
 ## Why `sbi_call` itself still shows `ecall; ret`
 
 You might wonder: “Why didn’t `sbi_call` show any register moves then?”
@@ -199,8 +185,6 @@ You might wonder: “Why didn’t `sbi_call` show any register moves then?”
 Because the important scrambling often happens at the inlined call site (`putchar`).
 
 If the compiler inlines `sbi_call`, it will prepare registers directly in the caller, then emit `ecall`. If your constraints do not demand specific registers, it will prepare them arbitrarily.
-
----
 
 ## Correct approach: tell the compiler the fixed-register ABI
 
@@ -223,8 +207,6 @@ asm volatile("ecall"
 ```
 
 This encodes the real requirement: values must be in `a0`–`a7` at `ecall`.
-
----
 
 ## Takeaway
 

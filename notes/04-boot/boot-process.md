@@ -2,8 +2,6 @@
 
 This note clarifies the boot process for the [Boot](https://operating-system-in-1000-lines.vercel.app/en/04-boot) chapter, specifically addressing "who loads the kernel into memory and how does execution start?"
 
----
-
 ## The Simple Mental Model
 
 To run an OS:
@@ -12,8 +10,6 @@ To run an OS:
 2. Set the program counter (`pc`) to the kernel entry point
 
 This is correct, but incomplete. The CPU cannot magically read disks—something must run first to do the loading.
-
----
 
 ## What Happens at Power-On
 
@@ -26,8 +22,6 @@ This is correct, but incomplete. The CPU cannot magically read disks—something
 | 5 | Linux/Kernel | S-mode | Your OS starts |
 
 **Key insight**: OpenSBI does not read disks. It provides runtime services and transfers control. The actual kernel loading is done by a bootloader (typically U-Boot) that has storage drivers.
-
----
 
 ## How "Setting PC" Works
 
@@ -43,8 +37,6 @@ jalr  x0, t0, 0                  # PC = t0, no return
 The CPU starts executing at the new address. For Linux, the bootloader also sets:
 - `a0` = hart ID
 - `a1` = device tree blob (DTB) pointer
-
----
 
 ## OpenSBI Firmware Types
 
@@ -82,8 +74,6 @@ The kernel bytes are baked into the OpenSBI firmware image. OpenSBI "loads" it b
 [Boot ROM] → [OpenSBI with kernel payload] → sret to kernel
 ```
 
----
-
 ## The QEMU Tutorial Case
 
 In the tutorial's `run.sh`:
@@ -109,8 +99,6 @@ Your kernel:
 
 QEMU reads your `kernel.elf` file and places it at `0x80200000`. OpenSBI then jumps there. No storage drivers needed—the emulator does the loading.
 
----
-
 ## Real Hardware vs QEMU
 
 | Aspect | QEMU | Real board |
@@ -119,8 +107,6 @@ QEMU reads your `kernel.elf` file and places it at `0x80200000`. OpenSBI then ju
 | Where is kernel? | Host filesystem | SD card, eMMC, network |
 | OpenSBI type | Usually FW_DYNAMIC | Varies by board |
 | Complexity | Minimal | Full boot chain |
-
----
 
 ## Visual Summary
 
@@ -165,8 +151,6 @@ Power on / Reset
 │ - your OS starts here           │
 └─────────────────────────────────┘
 ```
-
----
 
 ## Summary
 

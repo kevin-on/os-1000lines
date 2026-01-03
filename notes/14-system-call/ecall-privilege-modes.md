@@ -9,8 +9,6 @@ Both chapters use the `ecall` instruction, but they trap to different places:
 | 5 (Hello World) | S-mode (kernel) | M-mode (SBI/firmware) | Print characters via SBI |
 | 14 (System Call) | U-mode (user app) | S-mode (kernel) | Invoke system calls |
 
----
-
 ## RISC-V privilege levels
 
 RISC-V defines three privilege levels:
@@ -32,8 +30,6 @@ S-mode  ──ecall──►  M-mode   (handled by SBI)
 
 OpenSBI delegates U-mode `ecall` exceptions to S-mode, so your kernel's trap handler receives them. S-mode `ecall` exceptions are not delegated, so they go to M-mode where SBI handles them.
 
----
-
 ## Design philosophy
 
 Why is `ecall` designed this way?
@@ -46,8 +42,6 @@ Why is `ecall` designed this way?
 
 **Minimal hardware complexity**: The CPU doesn't need to understand system call numbers or SBI extensions. It just traps to the configured handler and lets software sort out what the caller wanted.
 
----
-
 ## Who sets the trap handlers?
 
 Each privilege level has its own trap vector register:
@@ -58,8 +52,6 @@ Each privilege level has its own trap vector register:
 | `mtvec` | M-mode | OpenSBI, before your kernel starts |
 
 Your kernel runs in S-mode, so it **cannot access M-mode registers** like `mtvec`. When QEMU boots, OpenSBI sets up `mtvec` to point to its own trap handler, then jumps to your kernel. This is why your kernel can call SBI via `ecall` without ever configuring M-mode.
-
----
 
 ## Summary
 

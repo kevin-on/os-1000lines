@@ -66,6 +66,4 @@ Arguments passed through `...` are promoted:
 
 So you must read them with the promoted type in `va_arg`.
 
----
-
 If you paste your current `printf`, I can point out exactly which `va_arg` type should match each format specifier.

@@ -2,8 +2,6 @@
 
 This note explains how the stack pointer (`sp`) is managed across kernel and user mode, addressing questions about the [User Mode](https://operating-system-in-1000-lines.vercel.app/en/13-user-mode) chapter.
 
----
-
 ## The Three Stacks
 
 This OS uses three different stacks:
@@ -17,8 +15,6 @@ This OS uses three different stacks:
 ### Why is user stack not in `struct process`?
 
 The user stack lives in the **user's virtual address space**, not the kernel's. It's embedded in the user binary via the linker script and mapped through the page table. The kernel stack must be in `struct process` because the kernel needs direct access to it during traps.
-
----
 
 ## How `sp` Changes During Process Execution
 
@@ -53,8 +49,6 @@ sret
 
 The key instruction is `csrrw sp, sscratch, sp` in `kernel_entry`, which atomically swaps `sp` and `sscratch`. This is how the kernel switches from user stack to kernel stack during trap entry.
 
----
-
 ## `ret` vs `sret`
 
 | Aspect | `ret` | `sret` |
@@ -65,8 +59,6 @@ The key instruction is `csrrw sp, sscratch, sp` in `kernel_entry`, which atomica
 | Use case | Normal function return | Return from trap / enter user mode |
 
 `sret` is the **only** way to transition from S-mode to U-mode. This is a security feature—privilege can only be dropped via controlled return instructions (`sret`, `mret`), not by arbitrary writes.
-
----
 
 ## Why a Single `sp` Register?
 
@@ -79,8 +71,6 @@ You might wonder: why not have separate registers for kernel stack and user stac
 **The `sscratch` compromise**: RISC-V provides one extra register (`sscratch`) specifically for the trap-entry stack swap. This minimal addition solves the problem without bloating the register file.
 
 **OS flexibility**: Different OSes organize stacks differently. A single `sp` lets each OS implement its own policy.
-
----
 
 ## Summary
 

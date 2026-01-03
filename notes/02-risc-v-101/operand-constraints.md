@@ -8,8 +8,6 @@ The main idea is simple:
 
 If the constraints do not match what the assembly actually does, the compiler will optimize under false assumptions and you will get broken code.
 
----
-
 ## Inline assembly syntax refresher
 
 ```c
@@ -22,8 +20,6 @@ asm volatile ("template"
 * **template**: a string the compiler does not parse for meaning
 * **outputs/inputs**: a contract about dataflow between C and the assembly
 * **clobbers**: a contract about extra side effects (registers, memory)
-
----
 
 ## The three most important operand modes
 
@@ -40,8 +36,6 @@ Most of the time you will use one of these:
 If you say `"r"(x)`, the compiler is allowed to assume `x` never changes because of the asm.
 If you say `"=r"(x)`, the compiler is allowed to assume the old value of `x` is not needed at all.
 If you say `"+r"(x)`, the compiler must treat `x` as both an input and an output.
-
----
 
 ## Example 1: Missing output
 
@@ -101,8 +95,6 @@ ok:
 ```
 
 The important lesson is not the exact registers. The lesson is that the compiler will freely reorder and reuse values based on your constraints.
-
----
 
 ## Example 2: Missing input
 
@@ -169,8 +161,6 @@ Again, the details vary. The principle is stable:
 * With `"=r"`, the compiler may discard the old value.
 * With `"+r"`, the compiler must preserve it.
 
----
-
 ## Alternative pattern: separate input and output operands
 
 Sometimes your assembly reads one value and writes to a different destination. In that case, do not force read-modify-write. Use separate operands:
@@ -184,8 +174,6 @@ asm volatile ("addi %0, %1, 1"
 * `%0` is written only
 * `%1` is read only
 * the compiler sees accurate dataflow
-
----
 
 ## How to sanity-check your constraints
 
@@ -205,8 +193,6 @@ When reading the disassembly, look for this:
 * Does it materialize inputs before the asm, or does it “skip” them because it thinks they are not needed?
 
 If the compiler’s behavior surprises you, the first thing to re-check is the constraints.
-
----
 
 ## Summary and the golden rule
 
